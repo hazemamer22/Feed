@@ -1,0 +1,50 @@
+name: Build Hutjens Book APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. جلب ملفات الكتاب
+        uses: actions/checkout@v4
+
+      - name: 2. إعداد بيئة Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 3. إعداد بيئة Java 17 للأندرويد
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 4. إعداد Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 5. إنشاء مشروع التطبيق ودمج الكتاب تلقائياً
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "موسوعة هاتجنز لتغذية الأبقار" "com.hutjens.dairybook" --web-dir www
+          npx cap add android
+
+      - name: 6. بناء واستخراج ملف الـ APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: 7. رفع ملف الـ APK الجاهز للتحميل
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hutjens-Dairy-Nutrition-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          
